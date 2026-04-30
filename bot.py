@@ -1,8 +1,10 @@
 import requests
 import asyncio
+import os
 from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTypes
 
+# memory store
 user_memory = {}
 
 def get_memory(user_id, text):
@@ -13,6 +15,7 @@ def get_memory(user_id, text):
     user_memory[user_id] = history
     return " ".join(history)
 
+# emoji system
 def get_emoji(text):
     text = text.lower()
     if "sad" in text or "kharap" in text:
@@ -26,12 +29,20 @@ def get_emoji(text):
     else:
         return "🙂"
 
+# HuggingFace API
 API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-base"
+
+HF_TOKEN = os.getenv("HF_TOKEN")
+
+headers = {
+    "Authorization": f"Bearer {HF_TOKEN}"
+}
 
 def ai_reply(text):
     try:
-        res = requests.post(API_URL, json={"inputs": text})
+        res = requests.post(API_URL, headers=headers, json={"inputs": text})
         data = res.json()
+
         if isinstance(data, list):
             return data[0].get("generated_text", "বুঝতে পারছি না")
         else:
@@ -39,6 +50,7 @@ def ai_reply(text):
     except:
         return "Problem হচ্ছে"
 
+# message handler
 async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.chat_id
     text = update.message.text
@@ -52,7 +64,11 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(emoji + " " + reply)
 
-app = ApplicationBuilder().token("8671489741:AAGtPB8KvA1JrDsHoWNEdfJHdlg-RbbAhds").build()
+# Telegram bot token
+TOKEN = os.getenv("8671489741:AAGtPB8KvA1JrDsHoWNEdfJHdlg-RbbAhds")
+
+# app start
+app = ApplicationBuilder().token(TOKEN).build()
 app.add_handler(MessageHandler(filters.TEXT, handle))
 
 print("Bot running...")
